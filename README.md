@@ -113,36 +113,26 @@ $$\varepsilon(\boldsymbol{\mu}) = \frac{\left\|\mathbf{w}_{\text{HDM}} - \mathbf
 
 ## Hyper-Reduction: Discrete Empirical Interpolation Method (DEIM)
 
-The affine ROM ignores the parameter dependence of $\kappa(T)$ — it assembles $A$ at a fixed $\kappa_0$ and projects. To account for the nonlinearity, the **Discrete Empirical Interpolation Method (DEIM)** approximates the spatially varying diffusivity field cheaply at query time.
+The affine ROM assembles the system matrix at a fixed reference diffusivity and ignores how $\kappa$ varies with temperature across the domain. DEIM corrects this by learning where to sample the nonlinear field so it can be reconstructed globally from just a few spatial evaluations.
 
-### Nonlinear Snapshot Collection
+### Offline: Nonlinear Snapshot Collection
 
-For each HDM snapshot $\mathbf{w}_k$, the diffusivity field is evaluated elementwise at all $N_{\mathrm{int}}$ interior nodes:
+For each HDM snapshot, the diffusivity is evaluated at every interior node to build a nonlinear snapshot matrix. POD on this matrix yields a low-dimensional DEIM basis. Since $\kappa(T)$ is affine in $T$, only 2 basis modes are needed to capture 99.99% of the variance across all 1,000 parameter points.
 
-$\mathbf{f}_k = \kappa_0 \left( 1 + \alpha \left( \mathbf{w}_k - T_{\mathrm{ref}} \right) \right) \in \mathbb{R}^{N_{\mathrm{int}}}$
+### Offline: Greedy Index Selection
 
-This yields a nonlinear snapshot matrix of size $N_{\mathrm{int}} \times N_\mu$. POD on this matrix produces a DEIM basis $\mathbf{V}_f \in \mathbb{R}^{N_{\mathrm{int}} \times k_f}$.
+A greedy algorithm identifies the 2 most informative spatial locations and builds a mask matrix $P$. The DEIM projection operator is then precomputed:
 
-Since $\kappa(T)$ is affine in $T$, only $k_f = 2$ modes are required to capture 99.99% of the variance.
+$$\Pi_f = \mathbf{V}_f (P^T \mathbf{V}_f)^{-1}$$
 
-### Greedy Index Selection
+### Online: Query Evaluation
 
-A greedy algorithm selects $k_f$ interpolation indices and assembles a mask matrix  
-$P \in \mathbb{R}^{N_{\mathrm{int}} \times k_f}$.
+At a new parameter point, the diffusivity field is reconstructed from evaluations at only 2 spatial indices:
 
-The DEIM projection operator is precomputed offline:
+$$\kappa(\mathbf{w}) \approx \Pi_f \cdot \kappa(\mathbf{w}_{\mathcal{I}})$$
 
-$\Pi_f = \mathbf{V}_f \left( P^T \mathbf{V}_f \right)^{-1} \in \mathbb{R}^{N_{\mathrm{int}} \times k_f}$
+The spatial mean of this reconstructed field gives an informed effective diffusivity, which replaces the naive $\kappa_0$ used by the affine ROM when assembling the reduced system.
 
-### Online Evaluation
-
-At a new query point $\boldsymbol{\mu}$, the full diffusivity field is reconstructed from only $k_f$ spatial evaluations:
-
-$\kappa(\mathbf{w}) \approx \Pi_f \, \kappa(\mathbf{w}_{\mathcal{I}})$
-
-where $\mathbf{w}_{\mathcal{I}}$ denotes the solution evaluated only at the $k_f$ DEIM interpolation indices.
-
-The reconstructed mean diffusivity $\bar{\kappa}_{\mathrm{DEIM}}$ replaces the naive $\kappa_0$ used by the affine ROM.
 
 ## Repository Structure
 
