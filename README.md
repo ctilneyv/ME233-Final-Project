@@ -47,9 +47,9 @@ The problem is parametrized by $\boldsymbol{\mu} = [U\, \kappa_0\, \bar{y}]$:
 
 | Parameter | Description | Range |
 |---|---|---|
-| $U$ | Convective velocity | $[0.1,\, 0.6]$ |
-| $\kappa_0$ | Reference diffusivity | $[5 \times 10^{-3},\, 0.025]$ |
-| $\bar{y}$ | Hotspot center location | $[0.4,\, 0.6]$ |
+| $U$ | Convective velocity | $[0.1\, 0.6]$ |
+| $\kappa_0$ | Reference diffusivity | $[5 \times 10^{-3}\, 0.025]$ |
+| $\bar{y}$ | Hotspot center location | $[0.4\, 0.6]$ |
 
 The Péclet number $Pe = UL/\kappa_0$ ranges up to 120, spanning diffusion-dominated to moderately convection-dominated regimes.
 
@@ -76,7 +76,7 @@ Because $\kappa$ depends on $T$, the system cannot be solved directly. The HDM i
 1. Warm-start initialization by computing the linear solution at $\kappa_0$
 2. Compute the spatially-averaged effective diffusivity $\bar{\kappa}^{(n)} = \langle \kappa_0(1 + \alpha(T^{(n)} - T_{\text{ref}}))\rangle$
 3. Reassemble and solve the linear system at $\bar{\kappa}^{(n)}$
-4. Apply damped update $\mathbf{w} \leftarrow (1-\omega)\mathbf{w}^{(n)} + \omega\mathbf{w}^{(n+1)}$ with adaptive $\omega \in [0.05,\, 0.5]$
+4. Apply damped update $\mathbf{w} \leftarrow (1-\omega)\mathbf{w}^{(n)} + \omega\mathbf{w}^{(n+1)}$ with adaptive $\omega \in [0.05\, 0.5]$
 5. Repeat until $\|\mathbf{w}^{(n+1)} - \mathbf{w}^{(n)}\| / \|\mathbf{w}^{(n)}\| < \varepsilon$
 
 A snapshot database of **1,000 HDM solutions** is generated over a full-grid parameter sweep, all converging without failure.
