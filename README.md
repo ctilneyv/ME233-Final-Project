@@ -420,7 +420,7 @@ The learning task is only to identify the coefficients of that quadratic structu
 With the learned nonlinear coordinates, the ROM becomes
 
 $$
-\mathbf{A}_r \mathbf{q} + \bar{\mathbf{V}} \,\widehat{\bar{\mathbf{q}}} = \mathbf{b}_r.
+\mathbf{A}_r \mathbf{q} + \bar{\mathbf{V}} \widehat{\bar{\mathbf{q}}} = \mathbf{b}_r.
 $$
 
 The Galerkin structure remains intact.
