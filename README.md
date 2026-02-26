@@ -155,8 +155,6 @@ The spatial mean of this reconstructed field gives an informed effective diffusi
 
 ---
 
----
-
 ## ANN-Augmented Projection-Based Model Order Reduction (Part 4)
 
 The nonlinearity in the governing PDE arises from the temperature-dependent diffusivity
