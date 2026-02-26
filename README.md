@@ -123,7 +123,7 @@ For each HDM snapshot $\mathbf{w_k}$, the diffusivity field is evaluated element
 
 $$\mathbf{f}_k = \kappa_0\left(1 + \alpha(\mathbf{w}_k - T_{\text{ref}})\right) \in \mathbb{R}^{N_{\text{int}}}$$
 
-This yields a nonlinear snapshot matrix $F \in \mathbb{R}^{N_{\text{int}} \times N_{\mu}}$. POD on $F$ produces a DEIM basis $\mathbf{V}_{f} \in \mathbb{R}^{N_{\text{int}} \times k_{f}}$ — since $\kappa(T)$ is affine in $T$, only $k_{f} = 2$ modes are needed to capture 99.99% of the variance.
+This yields a nonlinear snapshot matrix $F \in \mathbb{R}^{N_{\text{int}} \times N_{\mu}}$. POD on $F$ produces a DEIM basis $\mathbf{V}_f \in \mathbb{R}^{N_{\text{int}} \times k_f}$ — since $\kappa(T)$ is affine in $T$, only $k_f = 2$ modes are needed to capture 99.99% of the variance.
 
 ### Greedy Index Selection
 
@@ -137,7 +137,7 @@ At a new query point $\boldsymbol{\mu}$, the full diffusivity field is reconstru
 
 $$\kappa(\mathbf{w}) \approx \Pi_f \cdot \kappa(\mathbf{w}_{\mathcal{I}})$$
 
-where $\mathbf{w}_{\mathcal{I}}$ denotes the solution at the $k_{f}$ DEIM indices only. The reconstructed mean $\bar{\kappa}_{\text{DEIM}} = \langle \Pi_f \cdot \kappa(\mathbf{w}_{\mathcal{I}}) \rangle$ replaces the naive $\kappa_0$ used by the affine ROM.
+where $\mathbf{w}_\mathcal{I}$ denotes the solution at the $k_f$ DEIM indices only. The reconstructed mean $\bar{\kappa}_\text{DEIM} = \langle \Pi_f \cdot \kappa(\mathbf{w}_\mathcal{I}) \rangle$ replaces the naive $\kappa_0$ used by the affine ROM.
 
 ## Repository Structure
 
