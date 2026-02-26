@@ -91,7 +91,7 @@ A snapshot database of **1,000 HDM solutions** is generated over a full-grid par
 
 The solution is approximated by the subspace ansatz:
 
-$$\tilde{\mathbf{w}} = \mathbf{w}_{\text{ref}} + \mathbf{V}\mathbf{q}, \quad \mathbf{V} \in \mathbb{R}^{N \times k},\; \mathbf{q} \in \mathbb{R}^k,\; k \ll N$$
+$$\tilde{\mathbf{w}} = \mathbf{w}_{\text{ref}} + \mathbf{V}\mathbf{q}, \quad \mathbf{V} \in \mathbb{R}^{N \times k}\; \mathbf{q} \in \mathbb{R}^k\; k \ll N$$
 
 where $\mathbf{V}$ is a **Reduced-Order Basis (ROB)** built from solution snapshots via the **method of snapshots (POD)**. Applying an orthogonal Galerkin projection $\Pi_{\mathbf{V},\mathbf{V}} = \mathbf{V}\mathbf{V}^T$ – that is, constraining the residual to be orthogonal to $\text{range}(\mathbf{V})$ – yields the reduced system:
 
