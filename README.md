@@ -109,6 +109,34 @@ All ROM errors are reported as the relative $\ell^2$ error:
 
 $$\varepsilon(\boldsymbol{\mu}) = \frac{\left\|\mathbf{w}_{\text{HDM}} - \mathbf{w}_{\text{ROM}}\right\|_2}{\left\|\mathbf{w}_{\text{HDM}}\right\|_2}$$
 
+---
+
+## Hyper-Reduction: Discrete Empirical Interpolation Method (DEIM)
+
+The affine ROM ignores the parameter dependence of $\kappa(T)$ — it assembles $A$ at a fixed $\kappa_0$ and projects. To account for the nonlinearity, the **Discrete Empirical Interpolation Method (DEIM)** approximates the spatially-varying diffusivity field cheaply at query time.
+
+### Nonlinear Snapshot Collection
+
+For each HDM snapshot $\mathbf{w}_k$, the diffusivity field is evaluated elementwise at all $N_{\text{int}}$ interior nodes:
+
+$$\mathbf{f}_k = \kappa_0\left(1 + \alpha(\mathbf{w}_k - T_{\text{ref}})\right) \in \mathbb{R}^{N_{\text{int}}}$$
+
+This yields a nonlinear snapshot matrix $F \in \mathbb{R}^{N_{\text{int}} \times N_\mu}$. POD on $F$ produces a DEIM basis $\mathbf{V}_f \in \mathbb{R}^{N_{\text{int}} \times k_f}$ — since $\kappa(T)$ is affine in $T$, only $k_f = 2$ modes are needed to capture 99.99% of the variance.
+
+### Greedy Index Selection
+
+A greedy algorithm selects $k_f$ interpolation indices $\mathcal{I} = \{i_1, \ldots, i_{k_f}\}$ and assembles a mask matrix $P \in \mathbb{R}^{N_{\text{int}} \times k_f}$. The DEIM projection operator is precomputed offline:
+
+$$\Pi_f = \mathbf{V}_f (P^T \mathbf{V}_f)^{-1} \in \mathbb{R}^{N_{\text{int}} \times k_f}$$
+
+### Online Evaluation
+
+At a new query point $\boldsymbol{\mu}$, the full diffusivity field is reconstructed from only $k_f$ spatial evaluations:
+
+$$\kappa(\mathbf{w}) \approx \Pi_f \cdot \kappa(\mathbf{w}_{\mathcal{I}})$$
+
+where $\mathbf{w}_{\mathcal{I}}$ denotes the solution at the $k_f$ DEIM indices only. The reconstructed mean $\bar{\kappa}_{\text{DEIM}} = \langle \Pi_f \cdot \kappa(\mathbf{w}_{\mathcal{I}}) \rangle$ replaces the naive $\kappa_0$ used by the affine ROM.
+
 ## Repository Structure
 
 ```
