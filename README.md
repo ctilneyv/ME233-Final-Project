@@ -101,27 +101,44 @@ The POD energy spectrum of the nonlinear snapshot database decays quickly — 99
 
 ---
 
-## Part 2: Snapshot Budget Study (Updated)
+## Part 2: Linear PROM — Kolmogorov Barrier Study
 
-Part 2 now performs a systematic **snapshot budget loop** rather than a single ROM construction.
+### Motivation
 
-For varying training snapshot counts
+Before introducing nonlinear correction strategies, it is important to establish the fundamental limitation of the linear ROM on this problem. The **Kolmogorov $n$-width** $d_n(\mathcal{M})$ measures the best possible approximation error achievable by *any* $n$-dimensional linear subspace over the solution manifold $\mathcal{M}$:
 
-$$
-n_s \in \{5, 10, 20, 40, 80\}
-$$
+$$d_n(\mathcal{M}) = \inf_{\mathbf{V} \in \mathbb{R}^{N \times n}} \sup_{\mathbf{w} \in \mathcal{M}} \inf_{\mathbf{q} \in \mathbb{R}^n} \left\|\mathbf{w} - \mathbf{V}\mathbf{q}\right\|_2$$
 
-the workflow is repeated over multiple independent LHS trials:
+If $d_n(\mathcal{M})$ decays slowly with $n$, no linear ROM — regardless of how many snapshots are used — can achieve low error. This is the **Kolmogorov barrier**.
 
-1. Sample training parameters
-2. Build POD basis
-3. Construct ROM (affine, DEIM, or ANN-augmented)
-4. Evaluate over a validation set
-5. Report mean ± standard deviation of relative $\ell^2$ error
+### Snapshot Budget Sweep
 
-This produces statistical convergence trends of ROM accuracy with respect to snapshot count.
+To empirically measure this barrier, Part 2 sweeps the snapshot budget $k$ from 1 upward. For each $k$:
 
----
+1. Draw $k$ parameter points via **Latin Hypercube Sampling (LHS)** of $\mathcal{D}$
+2. Snap each to the nearest point in the precomputed HDM database
+3. Build a $k$-mode POD basis $\mathbf{V}_k$ from those $k$ snapshots
+4. Check the condition number $\kappa(A_r) = \text{rcond}(\mathbf{V}_k^T A \mathbf{V}_k)^{-1}$ of the reduced operator
+5. If $\text{rcond} < 10^{-12}$, the basis has become numerically singular — stop
+6. Otherwise evaluate on all remaining test points and record $E_{\text{max}}$, $E_{\text{avg}}$
+
+The offline cost at each $k$ is reported honestly as:
+
+$$t_{\text{offline}}(k) = k \cdot t_{\text{HDM}} + t_{\text{POD}}$$
+
+where $t_{\text{HDM}}$ is the average cost of a single HDM solve and $t_{\text{POD}}$ is the basis construction time.
+
+### Result: The Barrier
+
+The sweep reveals that $E_{\text{avg}}$ saturates around 0.12–0.13 and never meaningfully decreases, even as $k$ grows toward the singularity threshold. The reduced operator becomes singular at $k = 33$, setting a hard upper limit on the linear ROM's snapshot budget. The error at saturation ($k = 32$) is:
+
+| | $E_{\text{max}}$ | $E_{\text{avg}}$ |
+|---|---|---|
+| Linear PROM (saturation) | ~0.21 | ~0.13 |
+
+This is empirical evidence of the Kolmogorov barrier: the solution manifold $\mathcal{M}$ induced by the temperature-dependent diffusivity $\kappa(T)$ cannot be well-approximated by any linear subspace of tractable dimension. No amount of additional snapshots resolves this — the barrier is fundamental, not a sampling artifact.
+
+This result directly motivates the nonlinear correction strategies in Parts 3 and 4.
 
 ### Error Metric
 
