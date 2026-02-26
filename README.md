@@ -119,21 +119,21 @@ The affine ROM ignores the parameter dependence of $\kappa(T)$ — it assembles 
 
 ### Nonlinear Snapshot Collection
 
-For each HDM snapshot $\mathbf{w_k}$, the diffusivity field is evaluated elementwise at all $N_{\text{int}}$ interior nodes:
+For each HDM snapshot $\mathbf{w}_k$, the diffusivity field is evaluated elementwise at all $N_\text{int}$ interior nodes:
 
 $$\mathbf{f}_k = \kappa_0\left(1 + \alpha(\mathbf{w}_k - T_{\text{ref}})\right) \in \mathbb{R}^{N_{\text{int}}}$$
 
-This yields a nonlinear snapshot matrix $F \in \mathbb{R}^{N_{\text{int}} \times N_{\mu}}$. POD on $F$ produces a DEIM basis $\mathbf{V}_f \in \mathbb{R}^{N_{\text{int}} \times k_f}$ — since $\kappa(T)$ is affine in $T$, only $k_f = 2$ modes are needed to capture 99.99% of the variance.
+This yields a nonlinear snapshot matrix $F \in \mathbb{R}^{N_\text{int} \times N_\mu}$. POD on $F$ produces a DEIM basis $\mathbf{V}_f \in \mathbb{R}^{N_\text{int} \times k_f}$ — since $\kappa(T)$ is affine in $T$, only $k_f = 2$ modes are needed to capture 99.99% of the variance.
 
 ### Greedy Index Selection
 
-A greedy algorithm selects $k_{f}$ interpolation indices $\mathcal{I} = \{i_1, \ldots, i_{k_{f}}\}$ and assembles a mask matrix $P \in \mathbb{R}^{N_{\text{int}} \times k_{f}}$. The DEIM projection operator is precomputed offline:
+A greedy algorithm selects $k_f$ interpolation indices $\mathcal{I} = \{i_1, \ldots, i_{k_f}\}$ and assembles a mask matrix $P \in \mathbb{R}^{N_\text{int} \times k_f}$. The DEIM projection operator is precomputed offline:
 
 $$\Pi_f = \mathbf{V}_{f} (P^T \mathbf{V}_{f})^{-1} \in \mathbb{R}^{N_{\text{int}} \times k_{f}}$$
 
 ### Online Evaluation
 
-At a new query point $\boldsymbol{\mu}$, the full diffusivity field is reconstructed from only $k_{f}$ spatial evaluations:
+At a new query point $\boldsymbol{\mu}$, the full diffusivity field is reconstructed from only $k_f$ spatial evaluations:
 
 $$\kappa(\mathbf{w}) \approx \Pi_f \cdot \kappa(\mathbf{w}_{\mathcal{I}})$$
 
