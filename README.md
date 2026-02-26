@@ -111,33 +111,38 @@ $$\varepsilon(\boldsymbol{\mu}) = \frac{\left\|\mathbf{w}_{\text{HDM}} - \mathbf
 
 ---
 
----
-
 ## Hyper-Reduction: Discrete Empirical Interpolation Method (DEIM)
 
-The affine ROM ignores the parameter dependence of $\kappa(T)$ — it assembles $A$ at a fixed $\kappa_0$ and projects. To account for the nonlinearity, the **Discrete Empirical Interpolation Method (DEIM)** approximates the spatially-varying diffusivity field cheaply at query time.
+The affine ROM ignores the parameter dependence of $\kappa(T)$ — it assembles $A$ at a fixed $\kappa_0$ and projects. To account for the nonlinearity, the **Discrete Empirical Interpolation Method (DEIM)** approximates the spatially varying diffusivity field cheaply at query time.
 
 ### Nonlinear Snapshot Collection
 
-For each HDM snapshot **w**_k, the diffusivity field is evaluated elementwise at all N_int interior nodes:
+For each HDM snapshot $\mathbf{w}_k$, the diffusivity field is evaluated elementwise at all $N_{\mathrm{int}}$ interior nodes:
 
-$$\mathbf{f}_k = \kappa_0\left(1 + \alpha(\mathbf{w}_k - T_{\text{ref}})\right) \in \mathbb{R}^{N_{\text{int}}}$$
+$\mathbf{f}_k = \kappa_0 \left( 1 + \alpha \left( \mathbf{w}_k - T_{\mathrm{ref}} \right) \right) \in \mathbb{R}^{N_{\mathrm{int}}}$
 
-This yields a nonlinear snapshot matrix of size $N_{\text{int}} \times N_{\mu}$. POD on this matrix produces a DEIM basis **V**_f of size $N_{\text{int}} \times k_f$. Since $\kappa(T)$ is affine in $T$, only $k_f = 2$ modes are needed to capture 99.99% of the variance.
+This yields a nonlinear snapshot matrix of size $N_{\mathrm{int}} \times N_\mu$. POD on this matrix produces a DEIM basis $\mathbf{V}_f \in \mathbb{R}^{N_{\mathrm{int}} \times k_f}$.
+
+Since $\kappa(T)$ is affine in $T$, only $k_f = 2$ modes are required to capture 99.99% of the variance.
 
 ### Greedy Index Selection
 
-A greedy algorithm selects $k_f$ interpolation indices and assembles a mask matrix $P$ of size $N_{\text{int}} \times k_f$. The DEIM projection operator is precomputed offline:
+A greedy algorithm selects $k_f$ interpolation indices and assembles a mask matrix  
+$P \in \mathbb{R}^{N_{\mathrm{int}} \times k_f}$.
 
-$$\Pi_f = \mathbf{V}_f (P^T \mathbf{V}_f)^{-1} \in \mathbb{R}^{N_{\text{int}} \times k_f}$$
+The DEIM projection operator is precomputed offline:
+
+$\Pi_f = \mathbf{V}_f \left( P^T \mathbf{V}_f \right)^{-1} \in \mathbb{R}^{N_{\mathrm{int}} \times k_f}$
 
 ### Online Evaluation
 
 At a new query point $\boldsymbol{\mu}$, the full diffusivity field is reconstructed from only $k_f$ spatial evaluations:
 
-$$\kappa(\mathbf{w}) \approx \Pi_f \cdot \kappa(\mathbf{w}_{\mathcal{I}})$$
+$\kappa(\mathbf{w}) \approx \Pi_f \, \kappa(\mathbf{w}_{\mathcal{I}})$
 
-where $\mathbf{w}_{\mathcal{I}}$ denotes the solution evaluated at the $k_f$ DEIM indices only. The reconstructed mean diffusivity $\bar{\kappa}_{\text{DEIM}}$ replaces the naive $\kappa_0$ used by the affine ROM.
+where $\mathbf{w}_{\mathcal{I}}$ denotes the solution evaluated only at the $k_f$ DEIM interpolation indices.
+
+The reconstructed mean diffusivity $\bar{\kappa}_{\mathrm{DEIM}}$ replaces the naive $\kappa_0$ used by the affine ROM.
 
 ## Repository Structure
 
