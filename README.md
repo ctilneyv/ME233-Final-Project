@@ -97,7 +97,13 @@ where $\mathbf{V}$ is a **Reduced-Order Basis (ROB)** built from solution snapsh
 
 $$A_r \mathbf{q} = \mathbf{b}_r, \quad A_r = \mathbf{V}^T A \mathbf{V} \in \mathbb{R}^{k \times k}\quad \mathbf{b}_r = \mathbf{V}^T \mathbf{b} \in \mathbb{R}^k$$
 
-The POD energy spectrum of the nonlinear snapshot database decays quickly — 99.88% of energy is captured in $k = 6$ modes — indicating a low-dimensional solution manifold $\mathcal{M}$ despite the nonlinearity.
+The POD energy spectrum of the nonlinear snapshot database decays quickly — 99.9% of energy is captured in a handful of modes — indicating a reasonably low-dimensional solution subspace $\mathcal{M}$ despite the nonlinearity.
+
+### Error Metric
+
+All ROM errors are reported as the relative $\ell^2$ error:
+
+$$\varepsilon(\boldsymbol{\mu}) = \frac{\left\|\mathbf{w}_{\text{HDM}} - \mathbf{w}_{\text{ROM}}\right\|_2}{\left\|\mathbf{w}_{\text{HDM}}\right\|_2}$$
 
 ---
 
@@ -130,21 +136,11 @@ where $t_{\text{HDM}}$ is the average cost of a single HDM solve and $t_{\text{P
 
 ### Result: The Barrier
 
-The sweep reveals that $E_{\text{avg}}$ saturates around 0.12–0.13 and never meaningfully decreases, even as $k$ grows toward the singularity threshold. The reduced operator becomes singular at $k = 33$, setting a hard upper limit on the linear ROM's snapshot budget. The error at saturation ($k = 32$) is:
-
-| | $E_{\text{max}}$ | $E_{\text{avg}}$ |
-|---|---|---|
-| Linear PROM (saturation) | ~0.21 | ~0.13 |
+The sweep reveals that error saturates quickly and decreases very slowly, even as $k$ grows toward the singularity threshold. The reduced operator becomes nearly rank deficient, setting a near upper limit on the linear ROM's snapshot budget. 
 
 This is empirical evidence of the Kolmogorov barrier: the solution manifold $\mathcal{M}$ induced by the temperature-dependent diffusivity $\kappa(T)$ cannot be well-approximated by any linear subspace of tractable dimension. No amount of additional snapshots resolves this — the barrier is fundamental, not a sampling artifact.
 
 This result directly motivates the nonlinear correction strategies in Parts 3 and 4.
-
-### Error Metric
-
-All ROM errors are reported as the relative $\ell^2$ error:
-
-$$\varepsilon(\boldsymbol{\mu}) = \frac{\left\|\mathbf{w}_{\text{HDM}} - \mathbf{w}_{\text{ROM}}\right\|_2}{\left\|\mathbf{w}_{\text{HDM}}\right\|_2}$$
 
 ---
 
