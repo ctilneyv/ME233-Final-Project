@@ -208,17 +208,17 @@ $$\bar{\mathbf{q}} \approx \underbrace{W_2 \tanh(W_1 \mathbf{q} + \mathbf{b}_1) 
 
 $W_3$ is not regularization — it encodes the specific quadratic structure of $\|\nabla T\|^2$ that the affine ROM neglects. This is analogous to the **CANN (Constrained Artificial Neural Network)** philosophy: identify the terms the physics predicts, build them explicitly into the architecture, and let the data tune the coefficients rather than discover the structure from scratch.
 
+Substituting the full augmented ansatz $\tilde{\mathbf{w}} = \mathbf{w}_{\text{ref}} + \mathbf{V}\mathbf{q} + \bar{\mathbf{V}}\bar{\mathbf{q}}$ into the governing PDE yields:
+
+$$\underbrace{\kappa_0 \mathbf{V}^T \nabla^2 (\mathbf{V}\mathbf{q})}_{\text{affine ROM term}} + \underbrace{\kappa_0 \alpha\, \mathbf{V}^T \left[ (\mathbf{V}\mathbf{q} + \bar{\mathbf{V}}\bar{\mathbf{q}}) \nabla^2 (\mathbf{V}\mathbf{q} + \bar{\mathbf{V}}\bar{\mathbf{q}}) + \nabla(\mathbf{V}\mathbf{q} + \bar{\mathbf{V}}\bar{\mathbf{q}}) \cdot \nabla(\mathbf{V}\mathbf{q} + \bar{\mathbf{V}}\bar{\mathbf{q}}) \right]}_{\text{nonlinear correction} \approx \mathbf{V}^T \bar{\mathbf{V}} \mathcal{N}(\mathbf{q}) = \mathcal{N}(\mathbf{q})\text{ since } \mathbf{V}^T\bar{\mathbf{V}}=0} = \mathbf{V}^T U \frac{\partial}{\partial x}(\mathbf{V}\mathbf{q} + \bar{\mathbf{V}}\bar{\mathbf{q}})$$
+
+where $\bar{\mathbf{q}} = \mathcal{N}(\mathbf{q}) = W_2 \tanh(W_1\mathbf{q} + \mathbf{b}_1) + \mathbf{b}_2 + W_3(\mathbf{q} \odot \mathbf{q})$. The orthogonality $\mathbf{V}^T\bar{\mathbf{V}} = 0$ ensures the primary and secondary subspaces are decoupled (the network correction enters the projected residual without violating the primary Galerkin equations).
+
 ### Inputs, Outputs, and Network Architecture
 
 **Input**: $\mathbf{q} \in \mathbb{R}^k$ — the primary reduced coordinates, computed as $\mathbf{q} = \mathbf{V}^T(\mathbf{w} - \mathbf{w}_{\text{ref}})$. These encode where in the $k$-dimensional primary subspace the solution lives for a given $\boldsymbol{\mu}$.
 
 **Output**: $\bar{\mathbf{q}} \in \mathbb{R}^{\bar{k}}$ — the secondary reduced coordinates, $\bar{\mathbf{q}} = \bar{\mathbf{V}}^T(\mathbf{w} - \mathbf{w}_{\text{ref}})$. These encode the closure error — the component of the solution that the primary basis misses. At test time the network predicts $\bar{\mathbf{q}}$ directly from $\mathbf{q}$, with no additional HDM solve required.
-
-Substituting the full augmented ansatz $\tilde{\mathbf{w}} = \mathbf{w}_{\text{ref}} + \mathbf{V}\mathbf{q} + \bar{\mathbf{V}}\bar{\mathbf{q}}$ into the governing PDE and projecting onto $\text{range}(\mathbf{V})$ yields:
-
-$$\underbrace{\kappa_0 \mathbf{V}^T \nabla^2 (\mathbf{V}\mathbf{q})}_{\text{affine ROM term}} + \underbrace{\kappa_0 \alpha\, \mathbf{V}^T \left[ (\mathbf{V}\mathbf{q} + \bar{\mathbf{V}}\bar{\mathbf{q}}) \nabla^2 (\mathbf{V}\mathbf{q} + \bar{\mathbf{V}}\bar{\mathbf{q}}) + \nabla(\mathbf{V}\mathbf{q} + \bar{\mathbf{V}}\bar{\mathbf{q}}) \cdot \nabla(\mathbf{V}\mathbf{q} + \bar{\mathbf{V}}\bar{\mathbf{q}}) \right]}_{\text{nonlinear correction} \approx \mathbf{V}^T \bar{\mathbf{V}} \mathcal{N}(\mathbf{q}) = \mathcal{N}(\mathbf{q})\text{ since } \mathbf{V}^T\bar{\mathbf{V}}=0} = \mathbf{V}^T U \frac{\partial}{\partial x}(\mathbf{V}\mathbf{q} + \bar{\mathbf{V}}\bar{\mathbf{q}})$$
-
-where $\bar{\mathbf{q}} = \mathcal{N}(\mathbf{q}) = W_2 \tanh(W_1\mathbf{q} + \mathbf{b}_1) + \mathbf{b}_2 + W_3(\mathbf{q} \odot \mathbf{q})$. The orthogonality $\mathbf{V}^T\bar{\mathbf{V}} = 0$ ensures the primary and secondary subspaces decouple cleanly, so the network correction enters the projected residual without polluting the primary Galerkin equations.
 
 | Layer | Operation | Output size | Parameters |
 |---|---|---|---|
