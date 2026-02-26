@@ -133,27 +133,6 @@ $$\varepsilon(\boldsymbol{\mu}) = \frac{\left\|\mathbf{w}_{\text{HDM}} - \mathbf
 
 ---
 
-## Requirements
-
-- MATLAB R2021b or later
-- Deep Learning Toolbox (Part 4 — ANN training)
-- Statistics and Machine Learning Toolbox (`lhsdesign`)
-
----
-
-## Usage
-
-Set the toggle at the top of `main.m`:
-
-```matlab
-sweepHDM = true;   % recompute HDM snapshots (takes ~2 min)
-sweepHDM = false;  % load saved snapshots from .mat files
-```
-
-Then run `main.m`. Parts execute sequentially — HDM sweep, affine ROM baseline, DEIM hyperreduction, and ANN-augmented PMOR.
-
----
-
 ## References
 
 - Farhat, C. *AA 216 / CME 345: Projection-Based Model Order Reduction*, Stanford University, 2024.
