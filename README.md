@@ -103,7 +103,7 @@ The ROB is trained using **Latin Hypercube Sampling (LHS)** of the parameter dom
 
 All ROM errors are reported as the relative $\ell^2$ error:
 
-$$\varepsilon(\boldsymbol{\mu}) = \frac{\|\mathbf{w}_{\text{HDM}} - \mathbf{w}_{\text{ROM}}\|_2}{\|\mathbf{w}_{\text{HDM}}\|_2}$$
+$$\varepsilon(\boldsymbol{\mu}) = \frac{\||\mathbf{w}_{\text{HDM}} - \mathbf{w}_{\text{ROM}}\||_2}{\||\mathbf{w}_{\text{HDM}}\||_2}$$
 
 ---
 
