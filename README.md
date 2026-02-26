@@ -121,7 +121,7 @@ The affine ROM ignores the parameter dependence of $\kappa(T)$ — it assembles 
 
 For each HDM snapshot $\mathbf{w_k}$, the diffusivity field is evaluated elementwise at all $N_{\text{int}}$ interior nodes:
 
-$$\mathbf{f_k} = \kappa_0\left(1 + \alpha(\mathbf{w}_k - T_{\text{ref}})\right) \in \mathbb{R}^{N_{\text{int}}}$$
+$$\mathbf{f}_k = \kappa_0\left(1 + \alpha(\mathbf{w}_k - T_{\text{ref}})\right) \in \mathbb{R}^{N_{\text{int}}}$$
 
 This yields a nonlinear snapshot matrix $F \in \mathbb{R}^{N_{\text{int}} \times N_{\mu}}$. POD on $F$ produces a DEIM basis $\mathbf{V}_{f} \in \mathbb{R}^{N_{\text{int}} \times k_{f}}$ — since $\kappa(T)$ is affine in $T$, only $k_{f} = 2$ modes are needed to capture 99.99% of the variance.
 
