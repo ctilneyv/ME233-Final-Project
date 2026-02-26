@@ -155,254 +155,65 @@ The spatial mean of this reconstructed field gives an informed effective diffusi
 
 ---
 
-## ANN-Augmented Projection-Based Model Order Reduction (Part 4)
+## ANN-Augmented PMOR
 
-The nonlinearity in the governing PDE arises from the temperature-dependent diffusivity
+### Motivation
 
-$$
-\kappa(T) = \kappa_0\left(1 + \alpha (T - T_{\text{ref}})\right),
-$$
+DEIM corrects the nonlinearity by sampling the diffusivity field at sparse spatial locations. The ANN-augmented approach takes a fundamentally different path: rather than correcting the physics operator, it learns a **closure map in reduced coordinates** that captures what the primary linear subspace cannot represent.
 
-which induces a nonlinear diffusion operator
+The starting point is the augmented solution manifold from Barnett, Farhat & Maday (2023):
 
-$$
-\nabla \cdot \big( \kappa(T) \nabla T \big).
-$$
+$$\tilde{\mathbf{w}} = \mathbf{w}_{\text{ref}} + \mathbf{V}\mathbf{q} + \bar{\mathbf{V}}\mathcal{N}(\mathbf{q})$$
 
-After discretization and Galerkin projection onto the POD basis $\mathbf{V}$, the reduced solution is
-
-$$
-\tilde{\mathbf{w}} = \mathbf{w}_{\text{ref}} + \mathbf{V}\mathbf{q},
-$$
-
-and the reduced system contains a nonlinear term inherited from $\kappa(T)$.  
-Because $\kappa(T)$ is affine in $T$, substitution of the reduced ansatz yields a **quadratic dependence in the reduced coordinates**:
-
-$$
-\kappa(\tilde{\mathbf{w}})
-=
-\kappa_0
-+
-\alpha \kappa_0 \mathbf{V}\mathbf{q}.
-$$
-
-Thus, although the diffusivity is linear in temperature, the projected operator becomes nonlinear in $\mathbf{q}$ due to the coupling between $\kappa(\mathbf{w})$ and $\nabla \mathbf{w}$ inside the divergence operator. This induces curvature in the reduced manifold $\mathcal{M}$ that is not captured by an affine ROM.
-
----
-
-### Latent-Space Representation of the Nonlinear Term
-
-To isolate this nonlinear contribution, snapshots of the nonlinear component are projected onto a secondary basis $\bar{\mathbf{V}}$:
-
-$$
-\mathbf{g}(\mathbf{w}) = \nabla \cdot \big(\kappa(\mathbf{w}) \nabla \mathbf{w}\big)
-\quad \longrightarrow \quad
-\mathbf{g} \approx \bar{\mathbf{V}} \bar{\mathbf{q}}.
-$$
-
-Here:
-
-- $\mathbf{V}$ spans the **solution manifold**
-- $\bar{\mathbf{V}}$ spans the **nonlinear operator manifold**
-- $\mathbf{q}$ are solution coordinates
-- $\bar{\mathbf{q}}$ are nonlinear operator coordinates
-
-In classical hyper-reduction (e.g., DEIM), $\bar{\mathbf{q}}$ is recovered through sparse spatial sampling.
-
-In Part 4, instead of reconstructing the nonlinear field, we directly learn the mapping in latent space.
-
----
-
-### Neural Network Closure in Reduced Coordinates
-
-The ANN learns the parametric mapping
-
-$$
-\boldsymbol{\mu}
-\;\longrightarrow\;
-\widehat{\bar{\mathbf{q}}}
-$$
-
-where:
-
-- Input: parameter vector $\boldsymbol{\mu} = [U,\kappa_0,\bar{y}]$
-- Output: reduced nonlinear coordinates $\widehat{\bar{\mathbf{q}}}$
-
-These coordinates represent the projected nonlinear diffusion contribution in the reduced operator basis $\bar{\mathbf{V}}$.
-
-The reduced system therefore becomes
-
-$$
-\mathbf{A}_r \mathbf{q}
-+
-\bar{\mathbf{V}} \widehat{\bar{\mathbf{q}}}
-=
-\mathbf{b}_r,
-$$
-
-where the ANN provides a closure model for the nonlinear term directly in reduced space.
-
----
-
-### Connection to the Quadratic Structure
-
-Because the original nonlinearity is linear in $T$ but appears inside a divergence operator, the reduced dynamics exhibit effective quadratic dependence in $\mathbf{q}$.
-
-The ANN does not replace the PDE or learn the solution directly.  
-It approximates the nonlinear reduced operator coordinates $\bar{\mathbf{q}}$, which encode this quadratic interaction in latent space.
-
-Thus:
-
-- $\mathbf{V}$ captures the dominant solution manifold.
-- $\bar{\mathbf{V}}$ captures the dominant nonlinear operator manifold.
-- The ANN learns how parameters excite nonlinear modes in $\bar{\mathbf{V}}$.
-
-This preserves:
-
-- The Galerkin projection structure,
-- The governing PDE operator form,
-- The physics of diffusion–convection balance,
-
-while replacing the expensive nonlinear evaluation with a learned reduced closure.
-
----
+where $\mathbf{V} \in \mathbb{R}^{N \times k}$ is the primary basis (modes 1–6), $\bar{\mathbf{V}} \in \mathbb{R}^{N \times \bar{k}}$ is a secondary basis (modes 7–20), and $\mathcal{N}: \mathbb{R}^k \to \mathbb{R}^{\bar{k}}$ is a neural network that predicts the secondary coordinates from the primary ones. The affine ROM uses only the first two terms and stops. The ANN adds the correction $\bar{\mathbf{V}}\bar{\mathbf{q}}_{\text{pred}}$ on top.
 
 ### Interpretation
 
-This method can be interpreted as:
+This method can be interpreted simultaneously as:
 
-- A **latent-space constitutive model**,
-- A physics-embedded nonlinear closure,
-- A constrained automated model discovery step in reduced coordinates.
+- A **latent-space constitutive model** — $\mathcal{N}(\mathbf{q})$ plays the role of a closure law, relating coarse (primary) and fine (secondary) reduced coordinates, analogous to a turbulence closure or subgrid stress model
+- A **physics-embedded nonlinear correction** — the architecture is constrained to reflect the known quadratic structure of the governing nonlinearity (see below)
+- A **constrained automated model discovery step** — rather than discovering the full solution map $\boldsymbol{\mu} \to \mathbf{w}$, the network only needs to learn the residual between the linear ROM and the true solution, projected onto $\bar{\mathbf{V}}$
 
-The governing equations remain fixed.  
-The neural network only models how the nonlinear operator projects onto the reduced manifold.
+### Neural Closure Structure
 
-# Neural Closure for the Nonlinear Diffusion Term
+Expanding the governing PDE, the true solution satisfies:
 
----
+$$\nabla \cdot \left(\kappa(T) \nabla T\right) = U \frac{\partial T}{\partial x}, \quad \kappa(T) = \kappa_0\left(1 + \alpha(T - T_{\text{ref}})\right)$$
 
-## The Physical Equation Behind the Output
+Expanding the diffusion term:
 
-The network predicts the coordinates $\bar{\mathbf{q}}$, which aren’t just arbitrary numbers. They specifically represent the part of the PDE that the affine ROM leaves out.
+$$\kappa_0 \nabla^2 T + \underbrace{\kappa_0 \alpha (T - T_{\text{ref}}) \nabla^2 T + \kappa_0 \alpha \|\nabla T\|^2}_{\text{nonlinear correction}} = U \frac{\partial T}{\partial x}$$
 
-The governing steady equation is
+The affine ROM discards the nonlinear correction entirely. The closure $\bar{\mathbf{q}}$ is precisely the projection of this correction onto $\bar{\mathbf{V}}$. Substituting the ROM ansatz $T \approx T_{\text{ref}} + \mathbf{V}\mathbf{q}$:
 
-$$
-\nabla \cdot \big(\kappa(T)\nabla T\big) = U \frac{\partial T}{\partial x},
-$$
+$$\underbrace{\kappa_0 \alpha (\mathbf{V}\mathbf{q}) \nabla^2 (\mathbf{V}\mathbf{q})}_{\text{linear in } \mathbf{q}} + \underbrace{\kappa_0 \alpha \nabla(\mathbf{V}\mathbf{q}) \cdot \nabla(\mathbf{V}\mathbf{q})}_{\text{quadratic in } \mathbf{q}}$$
 
-with a temperature-dependent diffusivity
+The first term is linear in $\mathbf{q}$ and is already captured by a standard hidden layer. The second term scales like $\mathbf{q} \odot \mathbf{q}$ — the physics directly predicts a quadratic component in the closure. The network architecture is therefore constrained to reflect this:
 
-$$
-\kappa(T) = \kappa_0\big(1+\alpha (T-T_{\text{ref}})\big).
-$$
+$$\bar{\mathbf{q}} \approx \underbrace{W_2 \tanh(W_1 \mathbf{q} + \mathbf{b}_1) + \mathbf{b}_2}_{\text{standard hidden layer}} + \underbrace{W_3 (\mathbf{q} \odot \mathbf{q})}_{\text{physics skip: encodes } \|\nabla T\|^2}$$
 
-If we expand the diffusion operator, we get
+$W_3$ is not regularization as it encodes the specific quadratic structure of $\|\nabla T\|^2$ that the affine ROM neglects. This is analogous to the **CANN (Constrained Artificial Neural Network)**: identify the terms the physics predicts, build them explicitly into the architecture, and let the data tune the coefficients rather than discover the structure from scratch.
 
-$$
-\nabla \cdot (\kappa(T)\nabla T)
-= \kappa_0 \nabla^2 T
-+ \kappa_0 \alpha (T-T_{\text{ref}})\nabla^2 T
-+ \kappa_0 \alpha (\nabla T \cdot \nabla T).
-$$
+### Inputs, Outputs, and Network Architecture
 
-So the equation can be rewritten as
+**Input**: $\mathbf{q} \in \mathbb{R}^k$ — the primary reduced coordinates, computed as $\mathbf{q} = \mathbf{V}^T(\mathbf{w} - \mathbf{w}_{\text{ref}})$. These encode where in the primary subspace the solution lives for a given $\boldsymbol{\mu}$.
 
-$$
-\kappa_0 \nabla^2 T
-+ \underbrace{
-\kappa_0 \alpha (T-T_{\text{ref}})\nabla^2 T
-+ \kappa_0 \alpha (\nabla T \cdot \nabla T)
-}_{\text{nonlinear correction}}
-= U \frac{\partial T}{\partial x}.
-$$
+**Output**: $\bar{\mathbf{q}} \in \mathbb{R}^{\bar{k}}$ — the secondary reduced coordinates, $\bar{\mathbf{q}} = \bar{\mathbf{V}}^T(\mathbf{w} - \mathbf{w}_{\text{ref}})$. These encode the closure error — the part of the solution the 6-mode primary basis misses. At test time the network predicts $\bar{\mathbf{q}}$ directly from $\mathbf{q}$, with no HDM solve required.
 
-Here’s the key point: the affine ROM keeps only the first term, $\kappa_0 \nabla^2 T$, and drops the rest. The coordinates $\bar{\mathbf{q}}$ capture precisely that missing piece, projected onto the nonlinear operator basis $\bar{\mathbf{V}}$:
+| Layer | Operation | Size | Parameters |
+|---|---|---|---|
+| Input | $\mathbf{q}$ | $6 \times 1$ | — |
+| Hidden | $\tanh(W_1 \mathbf{q} + \mathbf{b}_1)$ | $32 \times 1$ | $W_1 \in \mathbb{R}^{32 \times 6}$, $\mathbf{b}_1 \in \mathbb{R}^{32}$ |
+| Output | $W_2 \mathbf{h} + \mathbf{b}_2$ | $14 \times 1$ | $W_2 \in \mathbb{R}^{14 \times 32}$, $\mathbf{b}_2 \in \mathbb{R}^{14}$ |
+| Physics skip | $W_3 (\mathbf{q} \odot \mathbf{q})$ | $14 \times 1$ | $W_3 \in \mathbb{R}^{14 \times 6}$ |
+| **Total** | | | **770 parameters** |
 
-$$
-\text{nonlinear correction} \;\longrightarrow\; \bar{\mathbf{V}}\bar{\mathbf{q}}.
-$$
+Training minimizes the MSE loss with L2 regularization:
 
-In other words, the network is learning a compact, reduced representation of a known physical residual — it’s not making up new physics.
+$$\mathcal{L} = \frac{1}{N_{\text{train}}} \sum_{i=1}^{N_{\text{train}}} \left\|\bar{\mathbf{q}}_i - \mathcal{N}(\mathbf{q}_i)\right\|_2^2 + \lambda \left(\|W_1\|_F^2 + \|W_2\|_F^2 + \|W_3\|_F^2\right)$$
 
----
-
-## The CANN Argument: What Structure Should the Closure Have?
-
-Let’s plug the ROM ansatz
-
-$$
-T \approx T_{\text{ref}} + \mathbf{V}\mathbf{q}
-$$
-
-into the nonlinear correction to see what structure emerges.
-
-### First nonlinear term
-
-$$
-\kappa_0 \alpha (T-T_{\text{ref}})\nabla^2 T
-= \kappa_0 \alpha (\mathbf{V}\mathbf{q}) \nabla^2(\mathbf{V}\mathbf{q}).
-$$
-
-Since $\nabla^2(\mathbf{V}\mathbf{q})$ is linear in $\mathbf{q}$, this term is **linear in $\mathbf{q}$**. This is exactly the kind of term a standard linear layer in the network can capture.
-
----
-
-### Second nonlinear term
-
-$$
-\kappa_0 \alpha \nabla T \cdot \nabla T
-= \kappa_0 \alpha \nabla(\mathbf{V}\mathbf{q}) \cdot \nabla(\mathbf{V}\mathbf{q}).
-$$
-
-Because
-
-$$
-\nabla(\mathbf{V}\mathbf{q}) = \sum_i q_i \nabla \mathbf{v}_i,
-$$
-
-the dot product expands as
-
-$$
-\sum_{i,j} q_i q_j \big(\nabla \mathbf{v}_i \cdot \nabla \mathbf{v}_j\big),
-$$
-
-which is **quadratic in $\mathbf{q}$**. In reduced coordinates, we can write this as
-
-$$
-\bar{\mathbf{q}} \sim f_{\text{linear}}(\mathbf{q}) + W_3 (\mathbf{q} \odot \mathbf{q}),
-$$
-
-where $\mathbf{q} \odot \mathbf{q}$ denotes elementwise quadratic interactions. The network only needs to learn the coefficients of this quadratic structure.
-
----
-
-## Architectural Consequence
-
-This quadratic skip term isn’t a random regularizer — it’s dictated by the PDE. The affine ROM misses the $\nabla T \cdot \nabla T$ contribution entirely.  
-
-So the ANN architecture is naturally informed by physics:  
-* Linear dependence arises from $(T-T_{\text{ref}})\nabla^2 T$  
-* Quadratic dependence arises from $\nabla T \cdot \nabla T$
-
-The network doesn’t invent a quadratic term; it just learns the correct weights for a structure that already exists in the equations.
-
----
-
-## Reduced System with Physics-Informed Closure
-
-With the learned nonlinear coordinates, the ROM becomes
-
-$$
-\mathbf{A}_r \mathbf{q} + \bar{\mathbf{V}} \widehat{\bar{\mathbf{q}}} = \mathbf{b}_r.
-$$
-
-The Galerkin structure remains intact. To recap:  
-* $\mathbf{V}$: solution manifold  
-* $\bar{\mathbf{V}}$: nonlinear operator manifold  
-* ANN: parametric map predicting the excitation of nonlinear operator modes
-
+with Adam optimizer, learning rate $10^{-3}$, batch size 128, and $\lambda = 10^{-4}$.
 
 ## Repository Structure
 
