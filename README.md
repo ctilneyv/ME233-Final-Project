@@ -302,7 +302,7 @@ $$
 Expanding the diffusion operator:
 
 $$
-\nabla \cdot (\kappa(T)\nabla T) 
+\nabla \cdot (\kappa(T)\nabla T)
 = \kappa_0 \nabla^2 T
 + \kappa_0 \alpha (T-T_{\text{ref}})\nabla^2 T
 + \kappa_0 \alpha \nabla T \cdot \nabla T.
@@ -312,8 +312,7 @@ We therefore obtain
 
 $$
 \kappa_0 \nabla^2 T
-+ 
-\underbrace{
++ \underbrace{
 \kappa_0 \alpha (T-T_{\text{ref}})\nabla^2 T
 + \kappa_0 \alpha \nabla T \cdot \nabla T
 }_{\text{nonlinear correction}}
