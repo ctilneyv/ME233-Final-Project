@@ -67,7 +67,7 @@ The PDE is discretized on a **75 × 75 finite-difference grid** using:
 
 This yields a linear system for the $73 \times 73 = 5{,}329$ interior degrees of freedom:
 
-$$A(\boldsymbol{\mu})\, \mathbf{w} = \mathbf{b}(\boldsymbol{\mu})$$
+$$A(\boldsymbol{\mu})\ \mathbf{w} = \mathbf{b}(\boldsymbol{\mu})$$
 
 where $A$ depends nonlinearly on the solution $\mathbf{w}$ through $\kappa(T)$.
 
