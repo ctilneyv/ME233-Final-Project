@@ -165,7 +165,7 @@ The starting point is the augmented solution manifold from Barnett, Farhat & Mad
 
 $$\tilde{\mathbf{w}} = \mathbf{w}_{\text{ref}} + \mathbf{V}\mathbf{q} + \bar{\mathbf{V}}\mathcal{N}(\mathbf{q})$$
 
-where $\mathbf{V} \in \mathbb{R}^{N \times k}$ is the primary basis (modes 1–6), $\bar{\mathbf{V}} \in \mathbb{R}^{N \times \bar{k}}$ is a secondary basis (modes 7–20), and $\mathcal{N}: \mathbb{R}^k \to \mathbb{R}^{\bar{k}}$ is a neural network that predicts the secondary coordinates from the primary ones. The affine ROM uses only the first two terms and stops. The ANN adds the correction $\bar{\mathbf{V}}\bar{\mathbf{q}}_{\text{pred}}$ on top.
+where $\mathbf{V} \in \mathbb{R}^{N \times k}$ is the primary basis, $\bar{\mathbf{V}} \in \mathbb{R}^{N \times \bar{k}}$ is a secondary basis, and $\mathcal{N}: \mathbb{R}^k \to \mathbb{R}^{\bar{k}}$ is a neural network that predicts the secondary coordinates from the primary ones. The affine ROM uses only the first two terms and stops. The ANN adds the correction $\bar{\mathbf{V}}\bar{\mathbf{q}}_{\text{pred}}$ on top.
 
 ### Interpretation
 
