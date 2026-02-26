@@ -99,9 +99,29 @@ $$A_r \mathbf{q} = \mathbf{b}_r, \quad A_r = \mathbf{V}^T A \mathbf{V} \in \math
 
 The POD energy spectrum of the nonlinear snapshot database decays quickly — 99.88% of energy is captured in $k = 6$ modes — indicating a low-dimensional solution manifold $\mathcal{M}$ despite the nonlinearity.
 
-### Snapshot Sampling
+---
 
-The ROB is trained using **Latin Hypercube Sampling (LHS)** of the parameter domain, which provides better space-filling coverage than random sampling. Performance is evaluated over 20 independent LHS trials of 10 snapshots each, with errors reported as mean ± standard deviation.
+## Part 2: Snapshot Budget Study (Updated)
+
+Part 2 now performs a systematic **snapshot budget loop** rather than a single ROM construction.
+
+For varying training snapshot counts
+
+$$
+n_s \in \{5, 10, 20, 40, 80\}
+$$
+
+the workflow is repeated over multiple independent LHS trials:
+
+1. Sample training parameters
+2. Build POD basis
+3. Construct ROM (affine, DEIM, or ANN-augmented)
+4. Evaluate over a validation set
+5. Report mean ± standard deviation of relative $\ell^2$ error
+
+This produces statistical convergence trends of ROM accuracy with respect to snapshot count.
+
+---
 
 ### Error Metric
 
@@ -121,7 +141,7 @@ For each HDM snapshot, the diffusivity is evaluated at every interior node to bu
 
 ### Offline: Greedy Index Selection
 
-A greedy algorithm identifies the 2 most informative spatial locations and builds a mask matrix $P$. The DEIM projection operator is then precomputed:
+Although a greedy algorithm would be useful, a basis size parameter identifies the 2 most informative spatial locations (or anything on the order of 1-10) and builds a mask matrix $P$. The DEIM projection operator is then precomputed:
 
 $$\Pi_f = \mathbf{V}_f (P^T \mathbf{V}_f)^{-1}$$
 
@@ -132,6 +152,133 @@ At a new parameter point, the diffusivity field is reconstructed from evaluation
 $$\kappa(\mathbf{w}) \approx \Pi_f \cdot \kappa(\mathbf{w}_{\mathcal{I}})$$
 
 The spatial mean of this reconstructed field gives an informed effective diffusivity, which replaces the naive $\kappa_0$ used by the affine ROM when assembling the reduced system.
+
+---
+
+---
+
+## ANN-Augmented Projection-Based Model Order Reduction (Part 4)
+
+The nonlinearity in the governing PDE arises from the temperature-dependent diffusivity
+
+$$
+\kappa(T) = \kappa_0\left(1 + \alpha (T - T_{\text{ref}})\right),
+$$
+
+which induces a nonlinear diffusion operator
+
+$$
+\nabla \cdot \big( \kappa(T) \nabla T \big).
+$$
+
+After discretization and Galerkin projection onto the POD basis $\mathbf{V}$, the reduced solution is
+
+$$
+\tilde{\mathbf{w}} = \mathbf{w}_{\text{ref}} + \mathbf{V}\mathbf{q},
+$$
+
+and the reduced system contains a nonlinear term inherited from $\kappa(T)$.  
+Because $\kappa(T)$ is affine in $T$, substitution of the reduced ansatz yields a **quadratic dependence in the reduced coordinates**:
+
+$$
+\kappa(\tilde{\mathbf{w}})
+=
+\kappa_0
++
+\alpha \kappa_0 \mathbf{V}\mathbf{q}.
+$$
+
+Thus, although the diffusivity is linear in temperature, the projected operator becomes nonlinear in $\mathbf{q}$ due to the coupling between $\kappa(\mathbf{w})$ and $\nabla \mathbf{w}$ inside the divergence operator. This induces curvature in the reduced manifold $\mathcal{M}$ that is not captured by an affine ROM.
+
+---
+
+### Latent-Space Representation of the Nonlinear Term
+
+To isolate this nonlinear contribution, snapshots of the nonlinear component are projected onto a secondary basis $\bar{\mathbf{V}}$:
+
+$$
+\mathbf{g}(\mathbf{w}) = \nabla \cdot \big(\kappa(\mathbf{w}) \nabla \mathbf{w}\big)
+\quad \longrightarrow \quad
+\mathbf{g} \approx \bar{\mathbf{V}} \bar{\mathbf{q}}.
+$$
+
+Here:
+
+- $\mathbf{V}$ spans the **solution manifold**
+- $\bar{\mathbf{V}}$ spans the **nonlinear operator manifold**
+- $\mathbf{q}$ are solution coordinates
+- $\bar{\mathbf{q}}$ are nonlinear operator coordinates
+
+In classical hyper-reduction (e.g., DEIM), $\bar{\mathbf{q}}$ is recovered through sparse spatial sampling.
+
+In Part 4, instead of reconstructing the nonlinear field, we directly learn the mapping in latent space.
+
+---
+
+### Neural Network Closure in Reduced Coordinates
+
+The ANN learns the parametric mapping
+
+$$
+\boldsymbol{\mu}
+\;\longrightarrow\;
+\widehat{\bar{\mathbf{q}}}
+$$
+
+where:
+
+- Input: parameter vector $\boldsymbol{\mu} = [U,\kappa_0,\bar{y}]$
+- Output: reduced nonlinear coordinates $\widehat{\bar{\mathbf{q}}}$
+
+These coordinates represent the projected nonlinear diffusion contribution in the reduced operator basis $\bar{\mathbf{V}}$.
+
+The reduced system therefore becomes
+
+$$
+\mathbf{A}_r \mathbf{q}
++
+\bar{\mathbf{V}} \widehat{\bar{\mathbf{q}}}
+=
+\mathbf{b}_r,
+$$
+
+where the ANN provides a closure model for the nonlinear term directly in reduced space.
+
+---
+
+### Connection to the Quadratic Structure
+
+Because the original nonlinearity is linear in $T$ but appears inside a divergence operator, the reduced dynamics exhibit effective quadratic dependence in $\mathbf{q}$.
+
+The ANN does not replace the PDE or learn the solution directly.  
+It approximates the nonlinear reduced operator coordinates $\bar{\mathbf{q}}$, which encode this quadratic interaction in latent space.
+
+Thus:
+
+- $\mathbf{V}$ captures the dominant solution manifold.
+- $\bar{\mathbf{V}}$ captures the dominant nonlinear operator manifold.
+- The ANN learns how parameters excite nonlinear modes in $\bar{\mathbf{V}}$.
+
+This preserves:
+
+- The Galerkin projection structure,
+- The governing PDE operator form,
+- The physics of diffusion–convection balance,
+
+while replacing the expensive nonlinear evaluation with a learned reduced closure.
+
+---
+
+### Interpretation
+
+This method can be interpreted as:
+
+- A **latent-space constitutive model**,
+- A physics-embedded nonlinear closure,
+- A constrained automated model discovery step in reduced coordinates.
+
+The governing equations remain fixed.  
+The neural network only models how the nonlinear operator projects onto the reduced manifold.
 
 
 ## Repository Structure
@@ -150,8 +297,10 @@ The spatial mean of this reconstructed field gives an informed effective diffusi
 │   ├── reshapeSolution.m
 │   ├── computeNonLinearKappa.m
 │   └── buildMaskDEIM.m
-├── visualization/          # Plotting utilities
-│   └── plotSolution.m
+├── visualization/
+│   ├── plotSolution.mlx
+│   ├── plotErrorComparison.mlx
+│   └── plotTimeComparison.mlx
 ├── *.mat                   # Saved HDM snapshots and metadata
 └── README.md
 ```
