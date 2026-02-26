@@ -284,8 +284,7 @@ The neural network only models how the nonlinear operator projects onto the redu
 
 ## The Physical Equation Behind the Output
 
-The quantity the network predicts, $\bar{\mathbf{q}}$, is not arbitrary.  
-It encodes the part of the PDE that the affine ROM omits.
+The network predicts the coordinates $\bar{\mathbf{q}}$, which aren’t just arbitrary numbers. They specifically represent the part of the PDE that the affine ROM leaves out.
 
 The governing steady equation is
 
@@ -293,13 +292,13 @@ $$
 \nabla \cdot \big(\kappa(T)\nabla T\big) = U \frac{\partial T}{\partial x},
 $$
 
-with temperature-dependent diffusivity
+with a temperature-dependent diffusivity
 
 $$
 \kappa(T) = \kappa_0\big(1+\alpha (T-T_{\text{ref}})\big).
 $$
 
-Expanding the diffusion operator:
+If we expand the diffusion operator, we get
 
 $$
 \nabla \cdot (\kappa(T)\nabla T)
@@ -308,7 +307,7 @@ $$
 + \kappa_0 \alpha (\nabla T \cdot \nabla T).
 $$
 
-We therefore obtain
+So the equation can be rewritten as
 
 $$
 \kappa_0 \nabla^2 T
@@ -319,35 +318,25 @@ $$
 = U \frac{\partial T}{\partial x}.
 $$
 
-**Key point:**  
-
-The affine ROM retains only
-
-$$
-\kappa_0 \nabla^2 T
-$$
-
-and discards the nonlinear correction.
-
-The closure coordinates, $\bar{\mathbf{q}}$, are exactly the projection of this nonlinear correction onto the nonlinear operator basis $\bar{\mathbf{V}}$:
+Here’s the key point: the affine ROM keeps only the first term, $\kappa_0 \nabla^2 T$, and drops the rest. The coordinates $\bar{\mathbf{q}}$ capture precisely that missing piece, projected onto the nonlinear operator basis $\bar{\mathbf{V}}$:
 
 $$
 \text{nonlinear correction} \;\longrightarrow\; \bar{\mathbf{V}}\bar{\mathbf{q}}.
 $$
 
-So the network is learning a reduced representation of a known physical residual — not inventing new physics.
+In other words, the network is learning a compact, reduced representation of a known physical residual — it’s not making up new physics.
 
 ---
 
 ## The CANN Argument: What Structure Should the Closure Have?
 
-Insert the ROM ansatz
+Let’s plug the ROM ansatz
 
 $$
 T \approx T_{\text{ref}} + \mathbf{V}\mathbf{q}
 $$
 
-into the nonlinear correction.
+into the nonlinear correction to see what structure emerges.
 
 ### First nonlinear term
 
@@ -356,8 +345,7 @@ $$
 = \kappa_0 \alpha (\mathbf{V}\mathbf{q}) \nabla^2(\mathbf{V}\mathbf{q}).
 $$
 
-Because $\nabla^2(\mathbf{V}\mathbf{q})$ is linear in $\mathbf{q}$, this term is **linear in $\mathbf{q}$**.  
-This component is already representable by a standard linear layer in the network.
+Since $\nabla^2(\mathbf{V}\mathbf{q})$ is linear in $\mathbf{q}$, this term is **linear in $\mathbf{q}$**. This is exactly the kind of term a standard linear layer in the network can capture.
 
 ---
 
@@ -368,7 +356,7 @@ $$
 = \kappa_0 \alpha \nabla(\mathbf{V}\mathbf{q}) \cdot \nabla(\mathbf{V}\mathbf{q}).
 $$
 
-Since
+Because
 
 $$
 \nabla(\mathbf{V}\mathbf{q}) = \sum_i q_i \nabla \mathbf{v}_i,
@@ -377,41 +365,28 @@ $$
 the dot product expands as
 
 $$
-\sum_{i,j} q_i q_j \big(\nabla \mathbf{v}_i \cdot \nabla \mathbf{v}_j\big).
+\sum_{i,j} q_i q_j \big(\nabla \mathbf{v}_i \cdot \nabla \mathbf{v}_j\big),
 $$
 
-This is **quadratic in $\mathbf{q}$**.  
-
-In reduced coordinates, this implies
+which is **quadratic in $\mathbf{q}$**. In reduced coordinates, we can write this as
 
 $$
 \bar{\mathbf{q}} \sim f_{\text{linear}}(\mathbf{q}) + W_3 (\mathbf{q} \odot \mathbf{q}),
 $$
 
-where $\mathbf{q} \odot \mathbf{q}$ denotes elementwise quadratic interactions.
+where $\mathbf{q} \odot \mathbf{q}$ denotes elementwise quadratic interactions. The network only needs to learn the coefficients of this quadratic structure.
 
 ---
 
 ## Architectural Consequence
 
-The quadratic skip term is not a heuristic regularizer.  
+This quadratic skip term isn’t a random regularizer — it’s dictated by the PDE. The affine ROM misses the $\nabla T \cdot \nabla T$ contribution entirely.  
 
-It is the reduced representation of
+So the ANN architecture is naturally informed by physics:  
+* Linear dependence arises from $(T-T_{\text{ref}})\nabla^2 T$  
+* Quadratic dependence arises from $\nabla T \cdot \nabla T$
 
-$$
-\nabla T \cdot \nabla T,
-$$
-
-which the affine ROM misses entirely.
-
-The ANN architecture therefore encodes:
-
-* Linear dependence from $(T-T_{\text{ref}})\nabla^2 T$,
-* Quadratic dependence from $\nabla T \cdot \nabla T$.
-
-The network is not discovering that a quadratic term should exist. The PDE already dictates it.  
-
-The learning task is only to identify the coefficients of that quadratic structure in the nonlinear operator basis $\bar{\mathbf{V}}$.
+The network doesn’t invent a quadratic term; it just learns the correct weights for a structure that already exists in the equations.
 
 ---
 
@@ -423,11 +398,10 @@ $$
 \mathbf{A}_r \mathbf{q} + \bar{\mathbf{V}} \widehat{\bar{\mathbf{q}}} = \mathbf{b}_r.
 $$
 
-The Galerkin structure remains intact.
-
+The Galerkin structure remains intact. To recap:  
 * $\mathbf{V}$: solution manifold  
 * $\bar{\mathbf{V}}$: nonlinear operator manifold  
-* ANN: parametric map predicting excitation of nonlinear operator modes
+* ANN: parametric map predicting the excitation of nonlinear operator modes
 
 
 ## Repository Structure
