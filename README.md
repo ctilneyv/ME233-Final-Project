@@ -35,7 +35,11 @@ This nonlinearity is physically motivated. Thermal conductivity in many material
 
 The left wall Dirichlet profile is a smooth sinusoidal hotspot centered at $\bar{y}$:
 
-$$T_D(y;\, \bar{y}) = \begin{cases} 300 \\ 300 + 325\left(\sin\left(3\pi|y - \bar{y}|\right) + 1\right) \\ 300 \end{cases} \quad \begin{aligned} &y < 1/3 \\ &1/3 \leq y \leq 2/3 \\ &y > 2/3 \end{aligned}$$
+| Region | $T_D(y;\, \bar{y})$ |
+|---|---|
+| $y < 1/3$ | $300$ |
+| $1/3 \leq y \leq 2/3$ | $300 + 325\left(\sin\left(3\pi\|y - \bar{y}\|\right) + 1\right)$ |
+| $y > 2/3$ | $300$ |
 
 producing temperatures in the range $[300, 950]$ K.
 
