@@ -43,7 +43,7 @@ producing temperatures in the range $[300, 950]$ K.
 
 ### Parameter Domain
 
-The problem is parametrized by $\boldsymbol{\mu} = [U,\, \kappa_0,\, \bar{y}]$:
+The problem is parametrized by $\boldsymbol{\mu} = [U\, \kappa_0\, \bar{y}]$:
 
 | Parameter | Description | Range |
 |---|---|---|
