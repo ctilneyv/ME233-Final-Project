@@ -178,7 +178,7 @@ The starting point is the augmented solution manifold from Barnett, Farhat & Mad
 
 $$\tilde{\mathbf{w}} = \mathbf{w}_{\text{ref}} + \mathbf{V}\mathbf{q} + \bar{\mathbf{V}}\mathcal{N}(\mathbf{q})$$
 
-where $\mathbf{V} \in \mathbb{R}^{N \times k}$ is the primary basis, $\bar{\mathbf{V}} \in \mathbb{R}^{N \times \bar{k}}$ is a secondary basis, and $\mathcal{N}: \mathbb{R}^k \to \mathbb{R}^{\bar{k}}$ is a neural network that predicts the secondary coordinates from the primary ones. The affine ROM uses only the first two terms and stops. The ANN adds the correction $\bar{\mathbf{V}}\bar{\mathbf{q}}_{\text{pred}}$ on top.
+where $\mathbf{V} \in \mathbb{R}^{N \times k}$ is the primary basis (modes 1–$k$), $\bar{\mathbf{V}} \in \mathbb{R}^{N \times \bar{k}}$ is a secondary basis (modes $k+1$ through $k+\bar{k}$), and $\mathcal{N}: \mathbb{R}^k \to \mathbb{R}^{\bar{k}}$ is a neural network that predicts the secondary coordinates from the primary ones. The affine ROM uses only the first two terms and stops. The ANN adds the correction $\bar{\mathbf{V}}\bar{\mathbf{q}}_{\text{pred}}$ on top.
 
 ### Interpretation
 
@@ -198,28 +198,28 @@ Expanding the diffusion term:
 
 $$\kappa_0 \nabla^2 T + \underbrace{\kappa_0 \alpha (T - T_{\text{ref}}) \nabla^2 T + \kappa_0 \alpha \|\nabla T\|^2}_{\text{nonlinear correction}} = U \frac{\partial T}{\partial x}$$
 
-The affine ROM discards the nonlinear correction entirely. The closure $\bar{\mathbf{q}}$ is precisely the projection of this correction onto $\bar{\mathbf{V}}$. Substituting the ROM ansatz $T \approx T_{\text{ref}} + \mathbf{V}\mathbf{q}$:
+The affine ROM discards the nonlinear correction entirely. The closure $\bar{\mathbf{q}} \in \mathbb{R}^{\bar{k}}$ is precisely the projection of this correction onto $\bar{\mathbf{V}}$. Substituting the ROM ansatz $T \approx T_{\text{ref}} + \mathbf{V}\mathbf{q}$:
 
 $$\underbrace{\kappa_0 \alpha (\mathbf{V}\mathbf{q}) \nabla^2 (\mathbf{V}\mathbf{q})}_{\text{linear in } \mathbf{q}} + \underbrace{\kappa_0 \alpha \nabla(\mathbf{V}\mathbf{q}) \cdot \nabla(\mathbf{V}\mathbf{q})}_{\text{quadratic in } \mathbf{q}}$$
 
-The first term is linear in $\mathbf{q}$ and is already captured by a standard hidden layer. The second term scales like $\mathbf{q} \odot \mathbf{q}$ — the physics directly predicts a quadratic component in the closure. The network architecture is therefore constrained to reflect this:
+The first term is linear in $\mathbf{q} \in \mathbb{R}^k$ and is already captured by a standard hidden layer. The second term scales like $\mathbf{q} \odot \mathbf{q}$ — the physics directly predicts a quadratic component in the closure $\bar{\mathbf{q}} \in \mathbb{R}^{\bar{k}}$. The network architecture is therefore constrained to reflect this:
 
 $$\bar{\mathbf{q}} \approx \underbrace{W_2 \tanh(W_1 \mathbf{q} + \mathbf{b}_1) + \mathbf{b}_2}_{\text{standard hidden layer}} + \underbrace{W_3 (\mathbf{q} \odot \mathbf{q})}_{\text{physics skip: encodes } \|\nabla T\|^2}$$
 
-$W_3$ is not regularization as it encodes the specific quadratic structure of $\|\nabla T\|^2$ that the affine ROM neglects. This is analogous to the **CANN (Constrained Artificial Neural Network)**: identify the terms the physics predicts, build them explicitly into the architecture, and let the data tune the coefficients rather than discover the structure from scratch.
+$W_3$ is not regularization — it encodes the specific quadratic structure of $\|\nabla T\|^2$ that the affine ROM neglects. This is analogous to the **CANN (Constrained Artificial Neural Network)** philosophy: identify the terms the physics predicts, build them explicitly into the architecture, and let the data tune the coefficients rather than discover the structure from scratch.
 
 ### Inputs, Outputs, and Network Architecture
 
-**Input**: $\mathbf{q} \in \mathbb{R}^k$ — the primary reduced coordinates, computed as $\mathbf{q} = \mathbf{V}^T(\mathbf{w} - \mathbf{w}_{\text{ref}})$. These encode where in the primary subspace the solution lives for a given $\boldsymbol{\mu}$.
+**Input**: $\mathbf{q} \in \mathbb{R}^k$ — the primary reduced coordinates, computed as $\mathbf{q} = \mathbf{V}^T(\mathbf{w} - \mathbf{w}_{\text{ref}})$. These encode where in the $k$-dimensional primary subspace the solution lives for a given $\boldsymbol{\mu}$.
 
-**Output**: $\bar{\mathbf{q}} \in \mathbb{R}^{\bar{k}}$ — the secondary reduced coordinates, $\bar{\mathbf{q}} = \bar{\mathbf{V}}^T(\mathbf{w} - \mathbf{w}_{\text{ref}})$. These encode the closure error — the part of the solution the 6-mode primary basis misses. At test time the network predicts $\bar{\mathbf{q}}$ directly from $\mathbf{q}$, with no HDM solve required.
+**Output**: $\bar{\mathbf{q}} \in \mathbb{R}^{\bar{k}}$ — the secondary reduced coordinates, $\bar{\mathbf{q}} = \bar{\mathbf{V}}^T(\mathbf{w} - \mathbf{w}_{\text{ref}})$. These encode the closure error — the component of the solution that the primary basis misses. At test time the network predicts $\bar{\mathbf{q}}$ directly from $\mathbf{q}$, with no additional HDM solve required.
 
-| Layer | Operation | Size | Parameters |
+| Layer | Operation | Output size | Parameters |
 |---|---|---|---|
-| Input | $\mathbf{q}$ | $6 \times 1$ | — |
-| Hidden | $\tanh(W_1 \mathbf{q} + \mathbf{b}_1)$ | $32 \times 1$ | $W_1 \in \mathbb{R}^{32 \times 6}$, $\mathbf{b}_1 \in \mathbb{R}^{32}$ |
-| Output | $W_2 \mathbf{h} + \mathbf{b}_2$ | $14 \times 1$ | $W_2 \in \mathbb{R}^{14 \times 32}$, $\mathbf{b}_2 \in \mathbb{R}^{14}$ |
-| Physics skip | $W_3 (\mathbf{q} \odot \mathbf{q})$ | $14 \times 1$ | $W_3 \in \mathbb{R}^{14 \times 6}$ |
+| Input | $\mathbf{q}$ | $k = 6$ | — |
+| Hidden | $\tanh(W_1 \mathbf{q} + \mathbf{b}_1)$ | $h = 32$ | $W_1 \in \mathbb{R}^{32 \times 6}$, $\mathbf{b}_1 \in \mathbb{R}^{32}$ |
+| Output | $W_2 \mathbf{h} + \mathbf{b}_2$ | $\bar{k} = 14$ | $W_2 \in \mathbb{R}^{14 \times 32}$, $\mathbf{b}_2 \in \mathbb{R}^{14}$ |
+| Physics skip | $W_3 (\mathbf{q} \odot \mathbf{q})$ | $\bar{k} = 14$ | $W_3 \in \mathbb{R}^{14 \times 6}$ |
 | **Total** | | | **770 parameters** |
 
 Training minimizes the MSE loss with L2 regularization:
